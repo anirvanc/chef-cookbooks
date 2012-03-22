@@ -193,7 +193,7 @@ _Optional_, defaults to ""
 
 ## apps/profiles
     
-    Defines an array of Apllication Profiles that get deployed to the given Tomcat Instance. The Profile Includes:
+Defines an array of _Apllication Profiles_ that get deployed to the given Tomcat Instance. The Profile Includes:
 
 * :remote_base  .- Base URI that will be used to resolve the artifact. If empty it will resolve to a Cookbook File. 
 * :artifact_id  .- Defines the Artifact Identifier (The artifactId is generally the name that the project is known by). Refer to http://maven.apache.org/guides/mini/guide-naming-conventions.html for more details.
