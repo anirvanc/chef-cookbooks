@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# Get the tomcat config (use this for environment specific settings)
+if [ -z "${TOMCAT_CFG}" ]; then
+    TOMCAT_CFG="<%=@tomcat_conf %>/tomcat.conf"
+fi
+
+if [ -r "$TOMCAT_CFG" ]; then
+    . $TOMCAT_CFG
+fi
+
+# Get the tomcat custom config (use this for application-specific environment settings)
+if [ -z "${TOMCAT_CUSTOM_CFG}" ]; then
+    TOMCAT_CUSTOM_CFG="<%=@tomcat_conf %>/tomcat_custom.conf"
+fi
+
+if [ -r "$TOMCAT_CUSTOM_CFG" ]; then
+    . $TOMCAT_CUSTOM_CFG
+fi
+
+if [ ! -x "$CATALINA_HOME" ]; then
+    echo "CATALINA_HOME at [$CATALINA_HOME] is not present or inaccessible.";
+    exit 1;
+fi
+if [ ! -x "$CATALINA_BASE" ]; then
+    echo "CATALINA_BASE at [$CATALINA_BASE] is not present or inaccessible.";
+    exit 1;
+fi
+
+#export  LOGGING_MANAGER="org.apache.juli.ClassLoaderLogManager"
+
+if [ "$1" = "start" ]; then
+    ${CATALINA_HOME}/bin/catalina.sh start >> ${CATALINA_LOGS}/catalina.out 2>&1
+
+elif [ "$1" = "start-security" ]; then
+    export JAVA_OPTS = "$JAVA_OPTS -Djava.security.manager -Djava.security.policy=\"${CATALINA_CONF}/catalina.policy\""
+    ${CATALINA_HOME}/bin/catalina.sh start >> ${CATALINA_LOGS}/catalina.out 2>&1 &
+
+elif [ "$1" = "start-jdpa" ]; then
+    export JAVA_OPTS = "$JAVA_OPTS \
+    -agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
+    ${CATALINA_HOME}/bi/catalina.sh start >> ${CATALINA_LOGS}/catalina.out 2>&1 &
+
+elif [ "$1" = "stop" ]; then
+    ${CATALINA_HOME}/bin/catalina.sh stop -force >> ${CATALINA_LOGS}/catalina.out 2>&1
+
+elif [ "$1" = "version" ]; then
+    ${JAVA_HOME}/bin/java -classpath ${CATALINA_HOME}/lib/catalina.jar  org.apache.catalina.util.ServerInfo
+else
+    echo "Usage: $0{start|start-security|stop|version}"
+    exit 1
+fi
+

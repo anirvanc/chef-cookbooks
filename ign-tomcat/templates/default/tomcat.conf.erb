@@ -1,0 +1,45 @@
+# System-wide configuration file for tomcat services
+# This will be sourced by tomcat and any secondary service
+# Values will be overridden by service-specific configuration
+# files in /etc/sysconfig
+#
+# Use this one to change default values for all services
+# Change the service specific ones to affect only one service
+# (see, for instance, /etc/sysconfig/tomcat)
+#
+
+# Where your java installation lives
+export JAVA_HOME="<%= node[:tomcat][:java_home] %>"
+
+# Where your tomcat installation lives
+export TOMCAT_USER="<%= @tomcat_user %>"
+export TOMCAT_USER="<%= @tomcat_group %>"
+
+export CATALINA_HOME="<%= @tomcat_home %>"
+export JASPER_HOME="<%= @tomcat_home %>"
+export CATALINA_BASE="<%= @tomcat_base %>"
+export CATALINA_CONF="<%= @tomcat_conf %>"
+export CATALINA_LOGS="<%= @tomcat_logs %>"
+export CATALINA_OUT="<%= @tomcat_out %>"
+export CATALINA_TMPDIR="<%= @tomcat_temp %>"
+export CATALINA_PID="/var/run/<%= node[:tomcat][:service] %>.pid"
+
+
+export CATALINA_OPTS="<%= @node[:tomcat][:catalina_opts] %>"
+# You can pass some parameters to java here if you wish to
+export JAVA_OPTS="<%= @node[:tomcat][:java_opts] %> <%= @node[:tomcat][:java_instance_opts] %> <%= @node[:tomcat][:snmp_opts] %> "
+
+# You can change your tomcat locale here
+LANG="<%= @node[:tomcat][:java][:locale][:user_lang] %>_<%= @node[:tomcat][:java][:locale][:user_country] %>"
+
+# set the timezone
+export TZ='Universal'
+
+# Run tomcat under the Java Security Manager
+SECURITY_MANAGER="<%= @node[:tomcat][:security_manager]  %>"
+
+# Time to wait in seconds, before killing process
+SHUTDOWN_WAIT="<%= @node[:tomcat][:shutdown_wait]  %>"
+
+# Whether to annoy the user with "attempting to shut down" messages or not
+SHUTDOWN_VERBOSE="<%= @node[:tomcat][:shutdown_verbose]  %>"

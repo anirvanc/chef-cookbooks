@@ -1,0 +1,293 @@
+#!/bin/bash
+
+#
+# tomcat      This shell script takes care of starting and stopping Tomcat
+#
+# chkconfig: - 80 20
+#
+### BEGIN INIT INFO
+# Provides: tomcat
+# Required-Start: $network $syslog
+# Required-Stop: $network $syslog
+# Default-Start:
+# Default-Stop:
+# Description: Release implementation for Servlet 2.5 and JSP 2.1
+# Short-Description: start and stop tomcat
+### END INIT INFO
+#
+# - originally written by Henri Gomez, Keith Irwin, and Nicolas Mailhot
+# - heavily rewritten by Deepak Bhole and Jason Corley
+# - small changes here and there to adapt to IGN JAVA APIs deployment by Bernardo Gomez-Palacio
+#
+
+# set a minimalist PATH
+PATH="/bin:/sbin:/usr/bin"
+
+NAME="$(basename $0)"
+unset ISBOOT
+if [ "${NAME:0:1}" = "S" -o "${NAME:0:1}" = "K" ]; then
+    NAME="${NAME:3}"
+    ISBOOT="1"
+fi
+
+# For SELinux we need to use 'runuser' not 'su'
+if [ -x "/sbin/runuser" ]; then
+    SU="/sbin/runuser"
+else
+    SU="/bin/su"
+fi
+
+
+if [ -z "$CATALINA_CONF" ]; then
+    CATALINA_CONF="<%=@tomcat_conf%>"
+fi
+
+# Get the tomcat config (use this for environment specific settings)
+TOMCAT_CFG="$CATALINA_CONF/tomcat.conf"
+if [ -r "$TOMCAT_CFG" ]; then
+    . $TOMCAT_CFG
+fi
+
+# Get instance specific config file
+if [ -r "/etc/sysconfig/${NAME}" ]; then
+    . /etc/sysconfig/${NAME}
+fi
+
+# Define which connector port to use
+#CONNECTOR_PORT="${CONNECTOR_PORT:-8080}"
+
+# Path to the tomcat launch script
+TOMCAT_SCRIPT="<%=@tomcat_launcher%>"
+
+# Tomcat program name
+TOMCAT_PROG="$NAME"
+
+# Define the tomcat username
+TOMCAT_USER="<%=@tomcat_user%>"
+TOMCAT_GROUP="<%=@tomcat_group%>"
+
+if [ -z "$CATALINA_OUT" ]; then
+    echo "CATALINA_OUT is not present, should be defined in $TOMCAT_CFG.";
+    exit 1;
+fi
+
+if [ -z "$CATALINA_PID" ]; then
+    echo "CATALINA_PID is not present, should be defined in $TOMCAT_CFG.";
+    exit 1;
+fi
+
+touch $CATALINA_OUT
+chown ${TOMCAT_USER}:${TOMCAT_GROUP} $CATALINA_OUT
+
+SHUTDOWN_WAIT="${SHUTDOWN_WAIT:-3}"
+
+SECURITY_MANAGER="${SECURITY_MANAGER:-false}"
+
+RETVAL="0"
+
+# pulled from RHEL4 /etc/rc.d/init.d/functions
+function checkpid() {
+    local i
+    for i in $*; do
+        if [ -d "/proc/${i}" ]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+function get_pid() {
+    local RETVAL="0"
+    if [ -f "${CATALINA_PID}" ]; then
+        read RETVAL < ${CATALINA_PID}
+    fi
+    echo $RETVAL
+}
+
+
+# pulled from RHEL4 /etc/rc.d/init.d/functions
+function echo_failure() {
+    echo -en "\\033[60G"
+    echo -n "[  "
+    echo -n $"FAILED"
+    echo -n "  ]"
+    echo -ne "\r"
+    echo ""
+    return 1
+}
+
+# pulled from RHEL4 /etc/rc.d/init.d/functions
+function echo_success() {
+    echo -en "\\033[60G"
+    echo -n "[  "
+    echo -n $"OK"
+    echo -n "  ]"
+    echo -ne "\r"
+    echo ""
+    return 0
+}
+
+function parseOptions() {
+    options=""
+    options="$options $(
+                 /usr/bin/awk '!/^#/ && !/^$/ { ORS=" "; print "export ", $0, ";" }' \
+                 $TOMCAT_CFG
+             )"
+    if [ -r "/etc/sysconfig/${NAME}" ]; then
+        options="$options $(
+                     /usr/bin/awk '!/^#/ && !/^$/ { ORS=" ";
+                                           print "export ", $0, ";" }' \
+                     /etc/sysconfig/${NAME}
+                 )"
+    fi
+    TOMCAT_SCRIPT="$options $TOMCAT_SCRIPT"
+}
+
+# See how we were called.
+function start() {
+    echo -n "Starting ${TOMCAT_PROG}: "
+    if [ -f "/var/lock/subsys/${NAME}" ]; then
+        if [ -f "$CATALINA_PID" ]; then
+            kpid="`get_pid`"
+            if checkpid $kpid 2>&1; then
+                echo "$NAME process already running"
+                return 1
+            else
+                echo "lock file found but no process running for"
+                echo "pid $kpid, continuing"
+            fi
+        fi
+    fi
+    # fix permissions on the log and pid files
+    touch $CATALINA_PID
+    chown ${TOMCAT_USER}:${TOMCAT_GROUP} $CATALINA_PID
+    touch $CATALINA_OUT
+    chown ${TOMCAT_USER}:${TOMCAT_GROUP} $CATALINA_OUT
+
+    if [ "$JDPA" = "true" ]; then
+        START="start-jdpa"
+    else
+        START="start"
+    fi
+
+    if [ "$SECURITY_MANAGER" = "true" ]; then
+        $SU - $TOMCAT_USER -c "$TOMCAT_SCRIPT start-security" >> $CATALINA_OUT 2>&1
+    else
+        $SU - $TOMCAT_USER -c "$TOMCAT_SCRIPT $START" >> $CATALINA_OUT 2>&1
+    fi
+    RETVAL="$?"
+    if [ "$RETVAL" -eq 0 ]; then
+        echo_success
+        mkdir -p /var/lock/subsys
+        touch /var/lock/subsys/${NAME}
+    else
+        echo_failure
+    fi
+    echo
+    return $RETVAL
+}
+
+function status() {
+    RETVAL="1"
+    if [ -f "${CATALINA_PID}" ]; then
+        kpid="`get_pid`"
+        if checkpid $kpid 2>&1; then
+            echo "$0 is already running (${kpid})"
+            RETVAL="0"
+        else
+            echo "lock file found but no process running for pid $kpid"
+        fi
+    else
+        pid="$(/usr/bin/pgrep -u ${TOMCAT_USER} java)"
+        if [ -n "$pid" ]; then
+            echo "$0 running (${pid}) but no PID file exists"
+            RETVAL="0"
+        else
+            echo "$0 is stopped"
+        fi
+    fi
+    return $RETVAL
+}
+
+function stop() {
+    echo -n "Stopping $TOMCAT_PROG: "
+    if [ -f "/var/lock/subsys/${NAME}" ]; then
+        kpid="`get_pid`"
+        $SU - $TOMCAT_USER -c "$TOMCAT_SCRIPT stop" >> $CATALINA_OUT 2>&1
+        RETVAL="$?"
+        if [ "$RETVAL" -eq "0" ]; then
+            count="0"
+            if [ "$kpid" -gt "0" ]; then
+                until [ "$(ps --pid $kpid | grep -c $kpid)" -eq "0" ] || [ "$count" -gt "$SHUTDOWN_WAIT" ]; do
+                    if [ "$SHUTDOWN_VERBOSE" == "true" ]; then
+                        echo -n -e "\nwaiting for processes $kpid to exit"
+                    fi
+                    sleep 1
+                    let count="${count} + 1"
+                done
+                if [ "$count" -gt "$SHUTDOWN_WAIT" ]; then
+                    if [ "$SHUTDOWN_VERBOSE" == "true" ]; then
+                        echo -n -e "\nkilling processes which didn't stop"
+                        echo -n -e "after "
+                        echo -n "$SHUTDOWN_WAIT seconds"
+                    fi
+                    kill -9 $kpid
+                fi
+                echo_success
+                if [ "$count" -gt "0" ]; then
+                    echo -n -e "\n"
+                fi
+            fi
+            rm -f /var/lock/subsys/${NAME} /var/run/${NAME}.pid
+        else
+            echo_failure
+        fi
+    fi
+}
+
+function restart() {
+    parseOptions
+    stop
+    sleep 2
+    start
+}
+
+# See how we were called.
+case "$1" in
+    start)
+        parseOptions
+        start
+    ;;
+    start-jdpa)
+        parseOptions
+        JDPA="true"
+        start
+    ;;
+    stop)
+        parseOptions
+        stop
+    ;;
+    restart)
+        restart
+    ;;
+    condrestart)
+        if [ "`get_pid`" -gt "0" ]; then
+            restart
+        fi
+    ;;
+    status)
+        status
+    ;;
+    version)
+        $TOMCAT_SCRIPT version
+    ;;
+    pid)
+            echo "`get_pid`"
+        ;;
+    *)
+        echo -n "Usage: $TOMCAT_PROG"
+        echo "{start|start-jdpa|stop|restart|condrestart|status|version|pid}"
+        exit 1
+esac
+
+exit $RETVAL
