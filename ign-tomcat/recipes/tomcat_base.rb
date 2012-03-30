@@ -26,9 +26,6 @@
 # 
 
 
-
-include_recipe "java"
-
 #-----
 include_recipe "ign-tomcat::user"
 include_recipe "ign-tomcat::tomcat_home"

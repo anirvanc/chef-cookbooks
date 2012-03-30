@@ -26,8 +26,6 @@ recipe              "ign-tomcat", "IGN Tomcat7 Recipe"
 
 #supports 'ubuntu','centos','redhat','debian'
 
-depends "java"
-
 attribute "tomcat/version",
     :display_name   => "Tomcat Distribution Version",
     :required       => "optional",
