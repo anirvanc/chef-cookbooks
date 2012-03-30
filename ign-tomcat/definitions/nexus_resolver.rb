@@ -35,16 +35,15 @@ define  :nexus_resolver,
         :app_artifact_id    => "", 
         :app_version        => "",
         :app_type           => "war",
-        :nexus_endpoint     => "service/local/artifact/maven/redirect",
-do
+        :nexus_endpoint     => "service/local/artifact/maven/redirect" do
 
   nexus_endpoint    = params[:nexus_endpoint]
 
   remote_base       = params[:remote_base]
-  raise "Argument :remote_base is required." if remote_base.nil? 
+  raise "Argument :remote_base is required." if remote_base.nil?
   
   app_group_id      = params[:app_group_id]
-  raise "Argument :app_group_id is required." if app_group_id.nil? 
+  raise "Argument :app_group_id is required." if app_group_id.nil?
 
   app_artifact_id   = params[:app_artifact_id]
   raise "Argument :app_artifact_id is required." if app_artifact_id.nil? 
@@ -73,26 +72,5 @@ do
     group   params[:tomcat_group]
     mode    "0640"
   end
-
-
-  #tomcat_service = params[:tomcat_service]
-=begin
-
-    remote_file "/tmp/couch.png" do
-      source "http://couchdb.apache.org/img/sketch.png"
-      action :nothing
-    end
- 
-    http_request "HEAD #{http://couchdb.apache.org/img/sketch.png}" do
-      message ""
-      url http://couchdb.apache.org/img/sketch.png
-      action :head
-      if File.exists?("/tmp/couch.png")
-        headers "If-Modified-Since" => File.mtime("/tmp/couch.png").httpdate
-      end
-      notifies :create, resources(:remote_file => "/tmp/couch.png"), :immediately
-    end
-
-=end
 
 end

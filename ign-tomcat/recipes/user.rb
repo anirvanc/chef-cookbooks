@@ -60,35 +60,36 @@ if tomcat_users_db_name.nil?
         log "#{tomcat_user} will not be managed"
     end
 
+    log "Setting tomcat/user to #{tomcat_user}"
     node[:tomcat][:user] = tomcat_user
 
 else
-  log "Expecting user #{tomcat_user} to be defined in Data_Bag #{tomcat_users_db_name}"
-  # Load the keys of the items in the 'admins' data bag
-  tomcat_user_details = data_bag_item("#{tomcat_users_db_name}", "#{tomcat_user}")
-  #tomcat_user_details = data_bag_item('tomcat-users', 'tomcat-app')
+    log "Expecting user #{tomcat_user} to be defined in Data_Bag #{tomcat_users_db_name}"
+    # Load the keys of the items in the 'admins' data bag
+    tomcat_user_details = data_bag_item("#{tomcat_users_db_name}", "#{tomcat_user}")
+    #tomcat_user_details = data_bag_item('tomcat-users', 'tomcat-app')
 
-  raise "Unable to find databag #{tomcat_users_db_name} for user #{tomcat_user}" if tomcat_user_details.nil?
-  tomcat_user = tomcat_user_details['id']
+    raise "Unable to find databag #{tomcat_users_db_name} for user #{tomcat_user}" if tomcat_user_details.nil?
+    tomcat_user = tomcat_user_details['id']
 
-  group = if tomcat_user_details['gid'] then tomcat_user_details['gid'] else group end
-  raise "No Tomcat Group defined (node[:tomcat][:group] || gid in Data_Bag #{tomcat_user})" if group.nil?
+    group = if tomcat_user_details['gid'] then tomcat_user_details['gid'] else group end
+    raise "No Tomcat Group defined (node[:tomcat][:group] || gid in Data_Bag #{tomcat_user})" if group.nil?
 
-  if manage_users
-      user(tomcat_user) do
-        uid tomcat_user_details['uid']
-        gid group
-        shell tomcat_user_details['shell']
-        comment tomcat_user_details['comment']
-        home tomcat_user_details['home']
-        supports :manage_home => true
-      end
-  else
-      log "#{tomcat_user} will not be managed"
-  end
-  node[:tomcat][:user] = tomcat_user
+    if manage_users
+        user(tomcat_user) do
+            uid tomcat_user_details['uid']
+            gid group
+            shell tomcat_user_details['shell']
+            comment tomcat_user_details['comment']
+            home tomcat_user_details['home']
+            supports :manage_home => true
+        end
+    else
+        log "#{tomcat_user} will not be managed"
+    end
+
+    log "Setting tomcat/user to #{tomcat_user}"
+    node[:tomcat][:user] = tomcat_user
 end
 
 raise "We were unable to resolve the Tomcat User ( node[:tomcat][:user] )." if node[:tomcat][:user].nil? 
-
-

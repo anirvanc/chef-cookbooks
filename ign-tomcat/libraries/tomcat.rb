@@ -13,12 +13,12 @@ class Tomcat
   end
 
   def install
-    tag_param = (@configuration[:tag]) ? "&tag=#{@configuration[:tag]}" :""
+    tag_param = (@configuration[:tag]) ? "&tag=#{@configuration[:tag]}" : ""
     get("/manager/deploy?path=#{@configuration[:path]}&war=file:#{@configuration[:war]}")
   end
 
   def update
-    tag_param = (@configuration[:tag]) ? "&tag=#{@configuration[:tag]}" :""
+    tag_param = (@configuration[:tag]) ? "&tag=#{@configuration[:tag]}" : ""
     get("/manager/deploy?path=#{@configuration[:path]}&war=file:#{@configuration[:war]}&update=true")
   end
 

@@ -31,8 +31,7 @@ define  :default_resolver,
         :app_group_id       => "",
         :app_artifact_id    => "",
         :app_version        => "",
-        :app_type           => "war",
-do
+        :app_type           => "war" do
     remote_base   = params[:remote_base]
 
     tomcat_service  = params[:tomcat_service]
@@ -81,24 +80,4 @@ do
         group   tomcat_group
         mode    "0640"
     end
-
-=begin
-
-    remote_file "/tmp/couch.png" do
-      source "http://couchdb.apache.org/img/sketch.png"
-      action :nothing
-    end
- 
-    http_request "HEAD #{http://couchdb.apache.org/img/sketch.png}" do
-      message ""
-      url http://couchdb.apache.org/img/sketch.png
-      action :head
-      if File.exists?("/tmp/couch.png")
-        headers "If-Modified-Since" => File.mtime("/tmp/couch.png").httpdate
-      end
-      notifies :create, resources(:remote_file => "/tmp/couch.png"), :immediately
-    end
-
-=end
-
 end

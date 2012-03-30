@@ -21,7 +21,7 @@ maintainer_email    "linuxops@ign.com"
 license             "Apache v2.0"
 description         "Installs and configures all aspects of Tomcat7 using custom local installation. Refere to the README.md file for a detailed description."
 long_description    IO.read(File.join(File.dirname(__FILE__), 'README.md'))
-version             "0.1.1"
+version             "12.5.3"
 recipe              "ign-tomcat", "IGN Tomcat7 Recipe"
 
 #supports 'ubuntu','centos','redhat','debian'

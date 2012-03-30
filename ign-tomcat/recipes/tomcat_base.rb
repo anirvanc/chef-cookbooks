@@ -188,65 +188,65 @@ script "install_manager" do
 end
 
 template "#{tomcat_webapps}/manager/META-INF/context.xml" do
-  source "manager.xml.erb"
-  group tomcat_group
-  owner "root"
-  mode 0640
-  notifies :restart, "service[#{tomcat_service}]"
-  #notifies :restart, resources(:service => "tomcat"), :delayed
+    source "manager.xml.erb"
+    group tomcat_group
+    owner "root"
+    mode 0640
+    notifies :restart, "service[#{tomcat_service}]"
+    #notifies :restart, resources(:service => "tomcat"), :delayed
 end
 
 
 template tomcat_script do
-  source "tomcat.sh.erb"
-  mode 0755
-  owner "root"
-  group "root"
-  variables script_vars
-  notifies :restart, "service[#{tomcat_service}]"
+    source "tomcat.sh.erb"
+    mode 0755
+    owner "root"
+    group "root"
+    variables script_vars
+    notifies :restart, "service[#{tomcat_service}]"
 end
 
 
 template tomcat_launcher do
-  source "tomcatd.sh.erb"
-  mode 0755
-  owner "root"
-  group "root"
-  variables script_vars
-  notifies :restart, "service[#{tomcat_service}]"
+    source "tomcatd.sh.erb"
+    mode 0755
+    owner "root"
+    group "root"
+    variables script_vars
+    notifies :restart, "service[#{tomcat_service}]"
 end
 
 node[:apps][:profiles].each do |app|
-  tomcat_app "#{app[:name]}" do
-    artifact_resolver   app[:resolver]
-    resolver_params     app[:resolver_params]
+    tomcat_app "#{app[:name]}" do
+        artifact_resolver   app[:resolver]
+        resolver_params     app[:resolver_params]
 
-    enabled             app[:enabled]
-    app_group_id        app[:group_id]
-    app_artifact_id     app[:artifact_id]
-    app_version         app[:version]
-    app_context         app[:context]
-    app_remote_base     app[:remote_base]
-    
+        enabled             app[:enabled]
+        app_group_id        app[:group_id]
+        app_artifact_id     app[:artifact_id]
+        app_version         app[:version]
+        app_context         app[:context]
+        app_remote_base     app[:remote_base]
 
-    tomcat_service tomcat_service
-    tomcat_group tomcat_group
-    tomcat_user tomcat_user
-    tomcat_webapps tomcat_webapps
 
-    apps_artifact_archive node[:apps][:artifact_archive]
-    apps_staged_archive node[:apps][:staged_archive]
-  end
+        tomcat_service tomcat_service
+        tomcat_group tomcat_group
+        tomcat_user tomcat_user
+        tomcat_webapps tomcat_webapps
+
+        apps_artifact_archive node[:apps][:artifact_archive]
+        apps_staged_archive node[:apps][:staged_archive]
+    end
 end
 
 
 service tomcat_service do
-  case node[:platform]
+    case node[:platform]
     when "centos"
       service_name tomcat_service
     else
       name tomcat_service
-  end
-  supports :start => true, :stop => true, :restart => true, :status => true
-  action [:enable, :start]
+    end
+    supports :start => true, :stop => true, :restart => true, :status => true
+    action [:enable, :start]
 end

@@ -53,26 +53,32 @@ if tomcat_group_db_name.nil?
         log "#{tomcat_group} will not be managed."
     end
 
+    log "tomcat/group set to #{tomcat_group}"
+    node[:tomcat][:group] = tomcat_group
+
 else
-  log "Expecting group #{tomcat_group_db_name} to be defined in Data_Bag 'groups'"
-  tomcat_group_details = data_bag_item("#{tomcat_group_db_name}", "#{tomcat_group}")
+    log "Expecting group #{tomcat_group_db_name} to be defined in Data_Bag 'groups'"
+    tomcat_group_details = data_bag_item("#{tomcat_group_db_name}", "#{tomcat_group}")
 
-  raise "Unable to find databag for group #{tomcat_group_db_name}" if tomcat_group_details.nil?
+    raise "Unable to find databag for group #{tomcat_group_db_name}" if tomcat_group_details.nil?
 
-  tomcat_group     = tomcat_group_details['id']
-  tomcat_group_gid = tomcat_group_details['gid']
+    tomcat_group     = tomcat_group_details['id']
+    tomcat_group_gid = tomcat_group_details['gid']
 
-  log "Group #{tomcat_group_details}[#{tomcat_group}, #{tomcat_group_gid}]"
+    log "Group #{tomcat_group_details}[#{tomcat_group}, #{tomcat_group_gid}]"
 
-  if manage_users
-      group(tomcat_group) do
-        action :create
-        gid tomcat_group_gid
-      end
-  else
+    if manage_users
+        group(tomcat_group) do
+            action :create
+            gid tomcat_group_gid
+        end
+    else
       log "#{tomcat_group} will not be managed."
-  end
-  node[:tomcat][:group] = tomcat_group
+    end
+
+  
+    log "tomcat/group set to #{tomcat_group}"
+    node[:tomcat][:group] = tomcat_group
 
 
 end

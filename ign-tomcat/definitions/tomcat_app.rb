@@ -69,8 +69,7 @@ define :tomcat_app,
        :app_remote_base         => "",
        :apps_artifact_archive   => "/srv/tomcat/archive",
        :apps_staged_archive     => "/srv/tomcat/staged",
-       :resolver_params         => {},
-do
+       :resolver_params         => {} do
 
     tomcat_service = params[:tomcat_service]
     raise "Undefined :tomcat_service" if tomcat_service.nil?
@@ -107,85 +106,85 @@ do
     log "Using artifact resolver #{resolver} for #{app_artifact_file}"
 
     case "#{resolver}"
-        when "default" then 
-            default_resolver "default_resolver" do
-                remote_base         app_remote_base
-                tomcat_service      tomcat_service
-                tomcat_group        tomcat_group
-                artifact_file       app_artifact_file
-                artifact_dir        app_artifact_dir
-                app_group_id        app_group_id
-                app_artifact_id     app_artifact_id
-                app_version         app_version
-            end
+    when "default" then 
+        default_resolver "default_resolver" do
+            remote_base         app_remote_base
+            tomcat_service      tomcat_service
+            tomcat_group        tomcat_group
+            artifact_file       app_artifact_file
+            artifact_dir        app_artifact_dir
+            app_group_id        app_group_id
+            app_artifact_id     app_artifact_id
+            app_version         app_version
+        end
 
-        when "nexus" then
-            
-            repository_id = if params[:resolver_params] then params[:resolver_params][:repository_id] end
+    when "nexus" then
+        
+        repository_id = if params[:resolver_params] then params[:resolver_params][:repository_id] end
 
-            nexus_resolver "nexus_resolver" do
-                remote_base         app_remote_base
-                repository_id       repository_id
-                tomcat_service      tomcat_service
-                tomcat_group        tomcat_group
-                artifact_file       app_artifact_file
-                artifact_dir        app_artifact_dir
-                app_group_id        app_group_id
-                app_artifact_id     app_artifact_id
-                app_version         app_version
-            end
+        nexus_resolver "nexus_resolver" do
+            remote_base         app_remote_base
+            repository_id       repository_id
+            tomcat_service      tomcat_service
+            tomcat_group        tomcat_group
+            artifact_file       app_artifact_file
+            artifact_dir        app_artifact_dir
+            app_group_id        app_group_id
+            app_artifact_id     app_artifact_id
+            app_version         app_version
+        end
 
-        else raise "Resolver #{resolver} is not yet supported."
+    else raise "Resolver #{resolver} is not yet supported."
     end
 
-  log("#{app_artifact_name} enabled[#{params[:enabled]}]..")
+    log("#{app_artifact_name} enabled[#{params[:enabled]}]..")
 
-  if params[:enabled]
-    unless File.exists?("#{app_staged_dir}/#{app_artifact_name}")
+    if params[:enabled]
+        unless File.exists?("#{app_staged_dir}/#{app_artifact_name}")
 
-      directory "#{app_staged_dir}/#{app_artifact_name}" do
-        action :delete
-      end
+          directory "#{app_staged_dir}/#{app_artifact_name}" do
+            action :delete
+          end
 
-      directory "#{app_staged_dir}/#{app_artifact_name}" do
-        action :create
-        recursive true
-        owner tomcat_user
-        group tomcat_group
-        mode "0550"
-      end
+          directory "#{app_staged_dir}/#{app_artifact_name}" do
+            action :create
+            recursive true
+            owner tomcat_user
+            group tomcat_group
+            mode "0550"
+          end
 
-      script "install_app" do
-        interpreter "bash"
-        user "root"
-        cwd "#{app_staged_dir}/#{app_artifact_name}"
-        code <<-EOH
-        cp "#{app_artifact_dir}/#{app_artifact_file}" .
-        jar xvf "#{app_artifact_file}"
-        rm  "#{app_artifact_file}"
-        EOH
-      end
+          script "install_app" do
+            interpreter "bash"
+            user "root"
+            cwd "#{app_staged_dir}/#{app_artifact_name}"
+            code <<-EOH
+            cp "#{app_artifact_dir}/#{app_artifact_file}" .
+            jar xvf "#{app_artifact_file}"
+            rm  "#{app_artifact_file}"
+            EOH
+          end
+        end
+
+
+        link "#{tomcat_webapps}/#{app_context}" do
+          to "#{app_staged_dir}/#{app_artifact_name}"
+          action :create
+          owner tomcat_user
+          group tomcat_group
+          notifies :restart, "service[#{tomcat_service}]"
+        end
+
+    else
+        if  File.exist?("#{tomcat_webapps}/#{app_context}")
+          link "#{tomcat_webapps}/#{app_context}" do
+            to "#{app_staged_dir}/#{app_artifact_name}"
+            action :delete
+            owner tomcat_user
+            group tomcat_group
+            notifies :restart, "service[#{tomcat_service}]"
+          end
+        end
     end
-
-
-    link "#{tomcat_webapps}/#{app_context}" do
-      to "#{app_staged_dir}/#{app_artifact_name}"
-      action :create
-      owner tomcat_user
-      group tomcat_group
-      notifies :restart, "service[#{tomcat_service}]"
-    end
-
-  else
-    if  File.exist?("#{tomcat_webapps}/#{app_context}")
-      link "#{tomcat_webapps}/#{app_context}" do
-        to "#{app_staged_dir}/#{app_artifact_name}"
-        action :delete
-        owner tomcat_user
-        group tomcat_group
-        notifies :restart, "service[#{tomcat_service}]"
-      end
-    end
-  end
 
 end
